@@ -9,6 +9,9 @@ class Room extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'name',
         'type',
@@ -19,44 +22,53 @@ class Room extends Model
         'is_active',
     ];
 
-    protected $casts = [
-        'is_active' => 'boolean',
-        'capacity' => 'integer',
-    ];
+    /**
+     * Get the attributes that should be cast.
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'capacity' => 'integer',
+        ];
+    }
 
+    /**
+     * Room type constants
+     */
     const TYPE_LABORATORIUM = 'laboratorium';
     const TYPE_RUANG_MUSIK = 'ruang_musik';
     const TYPE_AUDIO_VISUAL = 'audio_visual';
     const TYPE_LAPANGAN_BASKET = 'lapangan_basket';
     const TYPE_KOLAM_RENANG = 'kolam_renang';
 
-    public static function getTypes(): array
-    {
-        return [
-            self::TYPE_LABORATORIUM,
-            self::TYPE_RUANG_MUSIK,
-            self::TYPE_AUDIO_VISUAL,
-            self::TYPE_LAPANGAN_BASKET,
-            self::TYPE_KOLAM_RENANG,
-        ];
-    }
-
+    /**
+     * Relationship: Room has many Bookings
+     */
     public function bookings()
     {
-        return $this->hasMany(Booking::class);
+        return $this->hasMany(Booking::class, 'room_id');
     }
 
+    /**
+     * Relationship: Get approved bookings only
+     */
     public function approvedBookings()
     {
-        return $this->hasMany(Booking::class)->where('status', Booking::STATUS_APPROVED);
+        return $this->hasMany(Booking::class, 'room_id')
+            ->where('status', Booking::STATUS_APPROVED);
     }
 
+    /**
+     * Check if room is available at specific date and time
+     */
     public function isAvailable(string $date, string $startTime, string $endTime, ?int $excludeBookingId = null): bool
     {
         $query = $this->bookings()
             ->where('booking_date', $date)
-            ->whereIn('status', [Booking::STATUS_PENDING, Booking::STATUS_APPROVED])
+            ->whereIn('status', ['pending', 'approved'])
             ->where(function ($q) use ($startTime, $endTime) {
+                // Check for time overlaps
                 $q->whereBetween('start_time', [$startTime, $endTime])
                   ->orWhereBetween('end_time', [$startTime, $endTime])
                   ->orWhere(function ($q2) use ($startTime, $endTime) {
@@ -65,32 +77,45 @@ class Room extends Model
                   });
             });
 
+        // Exclude specific booking (for updates)
         if ($excludeBookingId) {
             $query->where('id', '!=', $excludeBookingId);
         }
 
-        return $query->count() === 0;
+        return !$query->exists();
     }
 
+    /**
+     * Get bookings for specific date
+     */
     public function getBookingsForDate(string $date)
     {
         return $this->bookings()
             ->where('booking_date', $date)
-            ->whereIn('status', [Booking::STATUS_PENDING, Booking::STATUS_APPROVED])
+            ->whereIn('status', ['pending', 'approved'])
             ->orderBy('start_time')
             ->get();
     }
 
+    /**
+     * Scope: Get active rooms only
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
+    /**
+     * Scope: Get rooms by type
+     */
     public function scopeByType($query, string $type)
     {
         return $query->where('type', $type);
     }
 
+    /**
+     * Scope: Filter by minimum capacity
+     */
     public function scopeMinCapacity($query, int $capacity)
     {
         return $query->where('capacity', '>=', $capacity);
