@@ -79,6 +79,8 @@ class LoginController extends Controller
             ]);
         }
 
+        // role selector removed: login will be based on email/password and DB role
+
         // Clear rate limiting on successful login
         RateLimiter::clear($this->throttleKey($request));
 

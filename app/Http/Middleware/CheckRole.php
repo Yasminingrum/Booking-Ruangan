@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
@@ -47,15 +48,15 @@ class CheckRole
 
         return $next($request);
     }
-
     /**
      * Redirect user berdasarkan role mereka
      */
     private function redirectBasedOnRole(string $role): Response
     {
         return match($role) {
-            'admin' => redirect()->route('admin.dashboard')
-                ->with('error', 'You do not have permission to access that page.'),
+            'admin' => (Route::has('admin.dashboard')
+                ? redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access that page.')
+                : redirect()->route('login')->with('error', 'Admin dashboard route not found. Please contact administrator.')),
             'kepala_sekolah' => redirect()->route('reports.index')
                 ->with('error', 'You do not have permission to access that page.'),
             'cleaning_service' => redirect()->route('dashboard')
@@ -66,4 +67,5 @@ class CheckRole
                 ->with('error', 'Invalid role detected. Please contact administrator.')
         };
     }
+    
 }
