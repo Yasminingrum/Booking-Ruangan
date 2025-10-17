@@ -1,4 +1,4 @@
-# Aplikasi Peminjaman Ruangan - Sekolah Palembang Harapan
+# Aplikasi Peminjaman Ruangan
 
 Aplikasi web untuk mengelola peminjaman ruangan sekolah secara digital, menggantikan sistem manual menggunakan Excel.
 
@@ -33,7 +33,7 @@ cd booking-ruangan
 ### 2. Install Dependencies
 ```bash
 composer install
-npm install  # jika pakai React
+npm install
 ```
 
 ### 3. Setup Environment
@@ -70,11 +70,11 @@ Akses aplikasi di: `http://localhost:8000`
 
 **Admin**
 - Email: `admin@palembangharapan.sch.id`
-- Password: `password`
+- Password: `password123`
 
 **Peminjam**
 - Email: `budi.santoso@palembangharapan.sch.id`
-- Password: `password`
+- Password: `password123`
 
 ## 📁 Struktur Folder Penting
 
@@ -122,12 +122,9 @@ php artisan serve --port=8001
 
 ## 👥 Tim Pengembang
 
-- Andi Pandapotan Purba – 0706012324024
-- Refaliano Juan – 0706012324020
-- Titi Dwiayu Yasminingrum – 0706012324025
-
-Program Studi Informatika  
-Universitas Ciputra Surabaya - 2025
+- Andi Pandapotan Purba
+- Refaliano Juan
+- Titi Dwiayu Yasminingrum
 
 ## 📄 Lisensi
 
