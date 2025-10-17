@@ -26,7 +26,7 @@ Aplikasi web untuk mengelola peminjaman ruangan sekolah secara digital, menggant
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/username/booking-ruangan.git
+git clone https://github.com/Yasminingrum/Booking-Ruangan.git
 cd booking-ruangan
 ```
 
