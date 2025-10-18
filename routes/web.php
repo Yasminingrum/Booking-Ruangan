@@ -8,6 +8,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminRoomController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminSettingController;
+use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\UserBookingController;
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Booking;
@@ -31,6 +33,13 @@ Route::post('/register', [RegisterController::class, 'register']);
 
 // Logout
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
+
+// Authenticated user routes
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/bookings/create/{room}', [UserBookingController::class, 'create'])->name('bookings.create');
+    Route::post('/bookings', [UserBookingController::class, 'store'])->name('bookings.store');
+});
 
 // Admin routes - protected by role middleware
 Route::middleware(['auth', 'role:admin'])->group(function () {

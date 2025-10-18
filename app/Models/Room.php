@@ -65,7 +65,7 @@ class Room extends Model
     public function isAvailable(string $date, string $startTime, string $endTime, ?int $excludeBookingId = null): bool
     {
         $query = $this->bookings()
-            ->where('booking_date', $date)
+            ->whereDate('booking_date', $date)
             ->whereIn('status', ['pending', 'approved'])
             ->where(function ($q) use ($startTime, $endTime) {
                 // Check for time overlaps
@@ -91,7 +91,7 @@ class Room extends Model
     public function getBookingsForDate(string $date)
     {
         return $this->bookings()
-            ->where('booking_date', $date)
+            ->whereDate('booking_date', $date)
             ->whereIn('status', ['pending', 'approved'])
             ->orderBy('start_time')
             ->get();

@@ -14,12 +14,12 @@ class AdminUserController extends Controller
      */
     public function indexTeachers()
     {
-        $teachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service'])
+    $teachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
             ->orderBy('name')
             ->paginate(10);
         
-        $totalTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service'])->count();
-        $activeTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service'])
+    $totalTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])->count();
+    $activeTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
             ->where('status', 'active')
             ->count();
         
@@ -46,9 +46,14 @@ class AdminUserController extends Controller
     /**
      * Show the form for creating a new user.
      */
-    public function create()
+    public function create($role = null)
     {
-        return view('admin.users.create');
+        // Validasi role agar hanya role yang diizinkan
+    $allowedRoles = ['kepala_sekolah', 'cleaning_service', 'guru', 'peminjam'];
+        if (!in_array($role, $allowedRoles)) {
+            $role = null;
+        }
+        return view('admin.users.create', compact('role'));
     }
 
     /**
@@ -61,7 +66,7 @@ class AdminUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:kepala_sekolah,cleaning_service,peminjam',
+            'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -81,7 +86,7 @@ class AdminUserController extends Controller
             'status' => $request->status,
         ]);
 
-        $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service']) 
+    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
             ? 'admin.users.teachers' 
             : 'admin.users.students';
 
@@ -111,7 +116,7 @@ class AdminUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'password' => 'nullable|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:kepala_sekolah,cleaning_service,peminjam',
+            'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -136,7 +141,7 @@ class AdminUserController extends Controller
 
         $user->update($data);
 
-        $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service']) 
+    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
             ? 'admin.users.teachers' 
             : 'admin.users.students';
 
@@ -165,7 +170,7 @@ class AdminUserController extends Controller
         $role = $user->role;
         $user->delete();
 
-        $redirectRoute = in_array($role, ['kepala_sekolah', 'cleaning_service']) 
+        $redirectRoute = in_array($role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
             ? 'admin.users.teachers' 
             : 'admin.users.students';
 

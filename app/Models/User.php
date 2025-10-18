@@ -56,6 +56,7 @@ class User extends Authenticatable
     const ROLE_ADMIN = 'admin';
     const ROLE_KEPALA_SEKOLAH = 'kepala_sekolah';
     const ROLE_CLEANING_SERVICE = 'cleaning_service';
+    const ROLE_GURU = 'guru';
 
     /**
      * Relationship: User has many Bookings

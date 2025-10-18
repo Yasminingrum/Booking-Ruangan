@@ -25,38 +25,67 @@ class ConflictValidationService
         string $endTime,
         ?int $excludeBookingId = null
     ): bool {
+        return (bool) $this->findFirstConflict(
+            $roomId,
+            $date,
+            $startTime,
+            $endTime,
+            $excludeBookingId
+        );
+    }
+
+    /**
+     * Dapatkan booking pertama yang konflik (jika ada)
+     *
+     * @param int $roomId
+     * @param string $date
+     * @param string $startTime
+     * @param string $endTime
+     * @param int|null $excludeBookingId
+     * @return Booking|null
+     */
+    public function findFirstConflict(
+        int $roomId,
+        string $date,
+        string $startTime,
+        string $endTime,
+        ?int $excludeBookingId = null
+    ): ?Booking {
         try {
-            // Query booking yang sudah approved atau pending di ruangan yang sama dan tanggal yang sama
             $query = Booking::where('room_id', $roomId)
-                ->where('booking_date', $date)
+                ->whereDate('booking_date', $date)
                 ->whereIn('status', [
                     Booking::STATUS_PENDING,
                     Booking::STATUS_APPROVED
                 ]);
 
-            // Exclude booking tertentu (untuk update)
             if ($excludeBookingId) {
                 $query->where('id', '!=', $excludeBookingId);
             }
 
             $existingBookings = $query->get();
 
-            // Cek overlap dengan setiap booking yang ada
             foreach ($existingBookings as $existingBooking) {
-                if ($this->hasTimeOverlap($startTime, $endTime, $existingBooking->start_time, $existingBooking->end_time)) {
+                if ($this->hasTimeOverlap(
+                    $startTime,
+                    $endTime,
+                    $existingBooking->start_time,
+                    $existingBooking->end_time
+                )) {
                     Log::warning('Booking conflict detected', [
                         'room_id' => $roomId,
                         'date' => $date,
                         'new_time' => "$startTime - $endTime",
                         'conflict_with_booking_id' => $existingBooking->id,
                         'existing_time' => "{$existingBooking->start_time} - {$existingBooking->end_time}",
+                        'conflict_status' => $existingBooking->status,
                     ]);
 
-                    return true; // Ada konflik
+                    return $existingBooking;
                 }
             }
 
-            return false; // Tidak ada konflik
+            return null;
 
         } catch (\Exception $e) {
             Log::error('Error in conflict validation', [
@@ -113,7 +142,7 @@ class ConflictValidationService
     ) {
         $query = Booking::with(['user', 'room'])
             ->where('room_id', $roomId)
-            ->where('booking_date', $date)
+            ->whereDate('booking_date', $date)
             ->whereIn('status', [
                 Booking::STATUS_PENDING,
                 Booking::STATUS_APPROVED

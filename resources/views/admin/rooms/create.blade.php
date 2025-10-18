@@ -24,6 +24,22 @@
           @enderror
         </div>
 
+        <!-- Jenis Ruangan -->
+        <div>
+          <label for="type" class="block text-sm font-medium text-gray-700 mb-2">Jenis Ruangan <span class="text-red-500">*</span></label>
+          <select id="type" name="type" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent @error('type') border-red-500 @enderror">
+            <option value="">Pilih Jenis</option>
+            <option value="laboratorium" {{ old('type', $room->type ?? '') == 'laboratorium' ? 'selected' : '' }}>Laboratorium</option>
+            <option value="ruang_musik" {{ old('type', $room->type ?? '') == 'ruang_musik' ? 'selected' : '' }}>Ruang Musik</option>
+            <option value="audio_visual" {{ old('type', $room->type ?? '') == 'audio_visual' ? 'selected' : '' }}>Audio Visual</option>
+            <option value="lapangan_basket" {{ old('type', $room->type ?? '') == 'lapangan_basket' ? 'selected' : '' }}>Lapangan Basket</option>
+            <option value="kolam_renang" {{ old('type', $room->type ?? '') == 'kolam_renang' ? 'selected' : '' }}>Kolam Renang</option>
+          </select>
+          @error('type')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+          @enderror
+        </div>
+
         <!-- Kapasitas -->
         <div>
           <label for="capacity" class="block text-sm font-medium text-gray-700 mb-2">Kapasitas <span class="text-red-500">*</span></label>
@@ -57,12 +73,12 @@
           @enderror
         </div>
 
-        <!-- Status Ketersediaan -->
+        <!-- Status Aktif -->
         <div>
           <label class="flex items-center gap-3">
-            <input type="checkbox" name="is_available" value="1" {{ old('is_available', $room->is_available ?? true) ? 'checked' : '' }}
+            <input type="checkbox" name="is_active" value="1" {{ old('is_active', $room->is_active ?? true) ? 'checked' : '' }}
                    class="w-4 h-4 text-black border-gray-300 rounded focus:ring-black">
-            <span class="text-sm font-medium text-gray-700">Ruangan Tersedia untuk Dipinjam</span>
+            <span class="text-sm font-medium text-gray-700">Ruangan Aktif (bisa dipinjam)</span>
           </label>
         </div>
 

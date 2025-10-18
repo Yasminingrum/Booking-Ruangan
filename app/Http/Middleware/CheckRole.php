@@ -60,9 +60,11 @@ class CheckRole
             'kepala_sekolah' => redirect()->route('reports.index')
                 ->with('error', 'You do not have permission to access that page.'),
             'cleaning_service' => redirect()->route('dashboard')
-                ->with('error', 'You do not have permission to access that page.'),
+                 ->with('info', 'Anda dialihkan ke dashboard petugas kebersihan.'),
+              'guru' => redirect()->route('dashboard')
+                 ->with('info', 'Anda dialihkan ke dashboard guru.'),
             'peminjam' => redirect()->route('dashboard')
-                ->with('error', 'You do not have permission to access that page.'),
+                 ->with('info', 'Silakan kelola peminjaman Anda di dashboard.'),
             default => redirect()->route('login')
                 ->with('error', 'Invalid role detected. Please contact administrator.')
         };

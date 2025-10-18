@@ -23,12 +23,12 @@
       <p class="text-3xl font-bold text-gray-900 mt-2">{{ $rooms->total() }}</p>
     </div>
     <div class="bg-white rounded-xl p-6 shadow border">
-      <h4 class="text-sm font-medium text-gray-500">Ruangan Tersedia</h4>
-      <p class="text-3xl font-bold text-green-600 mt-2">{{ $rooms->where('is_available', true)->count() }}</p>
+  <h4 class="text-sm font-medium text-gray-500">Ruangan Tersedia</h4>
+  <p class="text-3xl font-bold text-green-600 mt-2">{{ $rooms->where('is_active', true)->count() }}</p>
     </div>
     <div class="bg-white rounded-xl p-6 shadow border">
-      <h4 class="text-sm font-medium text-gray-500">Tidak Tersedia</h4>
-      <p class="text-3xl font-bold text-red-600 mt-2">{{ $rooms->where('is_available', false)->count() }}</p>
+  <h4 class="text-sm font-medium text-gray-500">Tidak Tersedia</h4>
+  <p class="text-3xl font-bold text-red-600 mt-2">{{ $rooms->where('is_active', false)->count() }}</p>
     </div>
   </div>
 
@@ -59,7 +59,7 @@
                 <span class="text-xs text-gray-600">{{ Str::limit($room->facilities ?? '-', 30) }}</span>
               </td>
               <td class="px-6 py-4">
-                @if($room->is_available)
+                @if($room->is_active)
                   <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Tersedia</span>
                 @else
                   <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">Tidak Tersedia</span>

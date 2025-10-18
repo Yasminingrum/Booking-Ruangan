@@ -11,7 +11,7 @@
       <h3 class="text-xl font-bold text-gray-900">Daftar Guru</h3>
       <p class="text-sm text-gray-600">Kelola data guru yang terdaftar</p>
     </div>
-    <a href="{{ route('admin.users.create', 'peminjam') }}" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition">
+    <a href="{{ route('admin.users.create', 'kepala_sekolah') }}" class="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition">
       + Tambah Guru
     </a>
   </div>
@@ -73,7 +73,7 @@
           @empty
             <tr>
               <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data guru. <a href="{{ route('admin.users.create', 'peminjam') }}" class="text-blue-600 hover:underline">Tambah sekarang</a>
+                Belum ada data guru. <a href="{{ route('admin.users.create', 'kepala_sekolah') }}" class="text-blue-600 hover:underline">Tambah sekarang</a>
               </td>
             </tr>
           @endforelse

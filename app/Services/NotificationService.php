@@ -10,6 +10,7 @@ use App\Mail\BookingApproved;
 use App\Mail\BookingRejected;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class NotificationService
 {
@@ -40,9 +41,9 @@ class NotificationService
                         '%s mengajukan peminjaman %s untuk tanggal %s pukul %s - %s',
                         $booking->user->name,
                         $booking->room->name,
-                        $booking->booking_date->format('d/m/Y'),
-                        $booking->start_time->format('H:i'),
-                        $booking->end_time->format('H:i')
+                        $this->formatDate($booking->booking_date),
+                        $this->formatTime($booking->start_time),
+                        $this->formatTime($booking->end_time)
                     ),
                     'related_booking_id' => $booking->id,
                     'is_read' => false,
@@ -89,13 +90,13 @@ class NotificationService
                 'user_id' => $booking->user_id,
                 'type' => Notification::TYPE_BOOKING_APPROVED,
                 'title' => 'Peminjaman Disetujui',
-                'message' => sprintf(
-                    'Peminjaman %s pada tanggal %s pukul %s - %s telah disetujui',
-                    $booking->room->name,
-                    $booking->booking_date->format('d/m/Y'),
-                    $booking->start_time->format('H:i'),
-                    $booking->end_time->format('H:i')
-                ),
+                    'message' => sprintf(
+                        'Peminjaman %s pada tanggal %s pukul %s - %s telah disetujui',
+                        $booking->room->name,
+                        $this->formatDate($booking->booking_date),
+                        $this->formatTime($booking->start_time),
+                        $this->formatTime($booking->end_time)
+                    ),
                 'related_booking_id' => $booking->id,
                 'is_read' => false,
             ]);
@@ -140,14 +141,14 @@ class NotificationService
                 'user_id' => $booking->user_id,
                 'type' => Notification::TYPE_BOOKING_REJECTED,
                 'title' => 'Peminjaman Ditolak',
-                'message' => sprintf(
-                    'Peminjaman %s pada tanggal %s pukul %s - %s ditolak. Alasan: %s',
-                    $booking->room->name,
-                    $booking->booking_date->format('d/m/Y'),
-                    $booking->start_time->format('H:i'),
-                    $booking->end_time->format('H:i'),
-                    $booking->rejection_reason ?? 'Tidak disebutkan'
-                ),
+                    'message' => sprintf(
+                        'Peminjaman %s pada tanggal %s pukul %s - %s ditolak. Alasan: %s',
+                        $booking->room->name,
+                        $this->formatDate($booking->booking_date),
+                        $this->formatTime($booking->start_time),
+                        $this->formatTime($booking->end_time),
+                        $booking->rejection_reason ?? 'Tidak disebutkan'
+                    ),
                 'related_booking_id' => $booking->id,
                 'is_read' => false,
             ]);
@@ -203,7 +204,7 @@ class NotificationService
                             '%s membatalkan peminjaman %s pada tanggal %s',
                             $booking->user->name,
                             $booking->room->name,
-                            $booking->booking_date->format('d/m/Y')
+                            $this->formatDate($booking->booking_date)
                         ),
                         'related_booking_id' => $booking->id,
                         'is_read' => false,
@@ -241,9 +242,9 @@ class NotificationService
                 'message' => sprintf(
                     'Reminder: Anda memiliki peminjaman %s besok (%s) pukul %s - %s',
                     $booking->room->name,
-                    $booking->booking_date->format('d/m/Y'),
-                    $booking->start_time->format('H:i'),
-                    $booking->end_time->format('H:i')
+                    $this->formatDate($booking->booking_date),
+                    $this->formatTime($booking->start_time),
+                    $this->formatTime($booking->end_time)
                 ),
                 'related_booking_id' => $booking->id,
                 'is_read' => false,
@@ -366,5 +367,29 @@ class NotificationService
 
             return 0;
         }
+    }
+
+    /**
+     * Safely format date value regardless of underlying type
+     */
+    private function formatDate($value, string $format = 'd/m/Y'): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format($format);
+        }
+
+        return Carbon::parse($value)->format($format);
+    }
+
+    /**
+     * Safely format time value regardless of underlying type
+     */
+    private function formatTime($value, string $format = 'H:i'): string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format($format);
+        }
+
+        return Carbon::parse($value)->format($format);
     }
 }

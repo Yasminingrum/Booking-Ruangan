@@ -130,11 +130,10 @@ class LoginController extends Controller
                 ->route('admin.dashboard')
                 ->with('success', $message),
 
-            User::ROLE_KEPALA_SEKOLAH => redirect()
-                ->route('reports.index')
-                ->with('success', $message),
-
-            User::ROLE_CLEANING_SERVICE => redirect()
+            User::ROLE_KEPALA_SEKOLAH,
+            User::ROLE_CLEANING_SERVICE,
+            User::ROLE_GURU,
+            User::ROLE_PEMINJAM => redirect()
                 ->route('dashboard')
                 ->with('success', $message),
 

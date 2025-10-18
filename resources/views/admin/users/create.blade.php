@@ -10,7 +10,7 @@
 
     <!-- Form Card -->
     <div class="bg-white rounded-lg shadow-md p-6">
-        <form action="{{ route('admin.users.store') }}" method="POST">
+    <form action="{{ route('admin.users.store', $role ?? '') }}" method="POST">
             @csrf
 
             <!-- Name -->
@@ -112,9 +112,10 @@
                     required
                 >
                     <option value="">Pilih Role</option>
-                    <option value="kepala_sekolah" {{ old('role') == 'kepala_sekolah' ? 'selected' : '' }}>Kepala Sekolah</option>
-                    <option value="cleaning_service" {{ old('role') == 'cleaning_service' ? 'selected' : '' }}>Cleaning Service</option>
-                    <option value="peminjam" {{ old('role') == 'peminjam' ? 'selected' : '' }}>Peminjam</option>
+                    <option value="kepala_sekolah" {{ (old('role', $role ?? '') == 'kepala_sekolah') ? 'selected' : '' }}>Kepala Sekolah</option>
+                    <option value="guru" {{ (old('role', $role ?? '') == 'guru') ? 'selected' : '' }}>Guru</option>
+                    <option value="cleaning_service" {{ (old('role', $role ?? '') == 'cleaning_service') ? 'selected' : '' }}>Cleaning Service</option>
+                    <option value="peminjam" {{ (old('role', $role ?? '') == 'peminjam') ? 'selected' : '' }}>Peminjam</option>
                 </select>
                 @error('role')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

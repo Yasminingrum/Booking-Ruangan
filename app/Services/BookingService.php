@@ -37,15 +37,19 @@ class BookingService
         DB::beginTransaction();
 
         try {
-            // Validasi konflik jadwal
-            $hasConflict = $this->conflictValidator->validateConflict(
+            // Validasi konflik jadwal dan dapatkan detail konflik jika ada
+            $conflictBooking = $this->conflictValidator->findFirstConflict(
                 $data['room_id'],
                 $data['booking_date'],
                 $data['start_time'],
                 $data['end_time']
             );
 
-            if ($hasConflict) {
+            if ($conflictBooking) {
+                if ($conflictBooking->status === Booking::STATUS_APPROVED) {
+                    throw new \Exception('Pengajuan tidak dapat dilanjutkan karena ruangan sudah disetujui pada waktu tersebut. Silakan pilih waktu lainnya.');
+                }
+
                 throw new \Exception('Ruangan sudah dibooking pada waktu tersebut');
             }
 

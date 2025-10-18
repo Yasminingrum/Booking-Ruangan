@@ -38,10 +38,11 @@ class AdminRoomController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:rooms',
+            'type' => 'required|in:laboratorium,ruang_musik,audio_visual,lapangan_basket,kolam_renang',
             'capacity' => 'required|integer|min:1',
             'location' => 'required|string|max:255',
             'facilities' => 'nullable|string',
-            'is_available' => 'boolean',
+            'is_active' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -53,10 +54,11 @@ class AdminRoomController extends Controller
 
         Room::create([
             'name' => $request->name,
+            'type' => $request->type,
             'capacity' => $request->capacity,
             'location' => $request->location,
             'facilities' => $request->facilities,
-            'is_available' => $request->has('is_available'),
+            'is_active' => $request->has('is_active'),
         ]);
 
         return redirect()
