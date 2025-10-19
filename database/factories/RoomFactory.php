@@ -42,11 +42,6 @@ class RoomFactory extends Factory
                 'capacity' => [40, 50, 60],
                 'facilities' => 'Kolam Semi Olimpik, Ruang Ganti, Shower, Peralatan Safety',
             ],
-            'kelas' => [
-                'names' => ['Kelas'],
-                'capacity' => [32, 36, 40],
-                'facilities' => 'AC, Proyektor, Whiteboard, Meja Kursi Siswa',
-            ],
         ];
 
         $type = fake()->randomElement(array_keys($types));

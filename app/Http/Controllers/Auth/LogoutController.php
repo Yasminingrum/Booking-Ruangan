@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,7 +20,12 @@ class LogoutController extends Controller
         // For API request - Revoke token
         if ($request->expectsJson()) {
             // Revoke current token
-            $request->user()->currentAccessToken()->delete();
+            /** @var PersonalAccessToken|null $currentToken */
+            $currentToken = $request->user()->currentAccessToken();
+
+            if ($currentToken) {
+                $currentToken->delete();
+            }
 
             return response()->json([
                 'success' => true,
@@ -84,20 +90,29 @@ class LogoutController extends Controller
      */
     public function sessions(Request $request)
     {
-        $tokens = $request->user()
+        $user = $request->user();
+
+        /** @var PersonalAccessToken|null $currentToken */
+        $currentToken = $user->currentAccessToken();
+
+        $tokens = $user
             ->tokens()
             ->select('id', 'name', 'created_at', 'last_used_at')
             ->orderBy('last_used_at', 'desc')
             ->get()
-            ->map(function ($token) use ($request) {
+            ->map(function (PersonalAccessToken $token) use ($currentToken) {
+                $lastUsedAt = $token->last_used_at
+                    ? $token->last_used_at->format('d M Y H:i')
+                    : 'Never';
+
+                $isCurrent = $currentToken ? $token->id === $currentToken->id : false;
+
                 return [
                     'id' => $token->id,
                     'name' => $token->name,
                     'created_at' => $token->created_at->format('d M Y H:i'),
-                    'last_used_at' => $token->last_used_at
-                        ? $token->last_used_at->format('d M Y H:i')
-                        : 'Never',
-                    'is_current' => $token->id === $request->user()->currentAccessToken()->id,
+                    'last_used_at' => $lastUsedAt,
+                    'is_current' => $isCurrent,
                 ];
             });
 

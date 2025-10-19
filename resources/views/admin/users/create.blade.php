@@ -23,7 +23,11 @@
                     name="name" 
                     id="name" 
                     value="{{ old('name') }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('name') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('name'),
+                        'border-gray-300' => !$errors->has('name')
+                    ])"
                     required
                 >
                 @error('name')
@@ -41,7 +45,11 @@
                     name="email" 
                     id="email" 
                     value="{{ old('email') }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('email') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('email'),
+                        'border-gray-300' => !$errors->has('email')
+                    ])"
                     required
                 >
                 @error('email')
@@ -58,7 +66,11 @@
                     type="password" 
                     name="password" 
                     id="password" 
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('password') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('password'),
+                        'border-gray-300' => !$errors->has('password')
+                    ])"
                     required
                     minlength="8"
                 >
@@ -93,7 +105,11 @@
                     name="phone" 
                     id="phone" 
                     value="{{ old('phone') }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('phone') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('phone'),
+                        'border-gray-300' => !$errors->has('phone')
+                    ])"
                 >
                 @error('phone')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -108,7 +124,11 @@
                 <select 
                     name="role" 
                     id="role" 
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('role') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('role'),
+                        'border-gray-300' => !$errors->has('role')
+                    ])"
                     required
                 >
                     <option value="">Pilih Role</option>
@@ -130,7 +150,11 @@
                 <select 
                     name="status" 
                     id="status" 
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent @error('status') border-red-500 @enderror"
+                    class="@class([
+                        'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                        'border-red-500' => $errors->has('status'),
+                        'border-gray-300' => !$errors->has('status')
+                    ])"
                     required
                 >
                     <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Aktif</option>

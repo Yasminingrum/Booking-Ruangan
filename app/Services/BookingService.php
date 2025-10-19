@@ -110,6 +110,92 @@ class BookingService
     }
 
     /**
+     * Update booking details (for borrower edits)
+     */
+    public function updateBookingDetails(Booking $booking, array $data): Booking
+    {
+        DB::beginTransaction();
+
+        try {
+            if ($booking->status !== Booking::STATUS_PENDING) {
+                throw new \Exception('Hanya pengajuan dengan status pending yang dapat diedit.');
+            }
+
+            if ($booking->user_id !== $data['user_id']) {
+                throw new \Exception('Anda tidak memiliki akses untuk mengubah pengajuan ini.');
+            }
+
+            $room = Room::findOrFail($data['room_id']);
+
+            if (!$room->is_active) {
+                throw new \Exception('Ruangan tidak tersedia untuk dipinjam.');
+            }
+
+            if ($data['participants'] > $room->capacity) {
+                throw new \Exception("Jumlah peserta melebihi kapasitas ruangan ({$room->capacity} orang)");
+            }
+
+            $conflict = $this->conflictValidator->findFirstConflict(
+                $data['room_id'],
+                $data['booking_date'],
+                $data['start_time'],
+                $data['end_time'],
+                $booking->id
+            );
+
+            if ($conflict) {
+                if ($conflict->status === Booking::STATUS_APPROVED) {
+                    throw new \Exception('Tidak dapat mengubah jadwal karena ruangan sudah disetujui pada waktu tersebut. Silakan pilih jadwal lain.');
+                }
+
+                throw new \Exception('Ruangan sudah dibooking pada waktu tersebut.');
+            }
+
+            $changes = [
+                'room_id' => $data['room_id'],
+                'booking_date' => $data['booking_date'],
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
+                'purpose' => $data['purpose'],
+                'participants' => $data['participants'],
+            ];
+
+            $booking->fill($changes);
+
+            if (!$booking->isDirty()) {
+                DB::commit();
+                return $booking->fresh(['room']);
+            }
+
+            $booking->save();
+
+            $booking->histories()->create([
+                'changed_by_user_id' => $data['user_id'],
+                'old_status' => Booking::STATUS_PENDING,
+                'new_status' => Booking::STATUS_PENDING,
+                'notes' => 'Booking diperbarui oleh peminjam melalui portal pengguna',
+            ]);
+
+            DB::commit();
+
+            Log::info('Booking updated by borrower', [
+                'booking_id' => $booking->id,
+                'user_id' => $data['user_id'],
+            ]);
+
+            return $booking->fresh(['room']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::warning('Failed to update booking details', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Update status booking
      *
      * @param int $bookingId

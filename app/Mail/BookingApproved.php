@@ -4,12 +4,14 @@ namespace App\Mail;
 
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Carbon\Carbon;
 
-class BookingApproved extends Mailable
+class BookingApproved extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -38,21 +40,33 @@ class BookingApproved extends Mailable
      */
     public function content(): Content
     {
+        $bookingDate = $this->booking->booking_date instanceof Carbon
+            ? $this->booking->booking_date
+            : Carbon::parse($this->booking->booking_date);
+
+        $startTime = Carbon::parse($this->booking->start_time);
+        $endTime = Carbon::parse($this->booking->end_time);
+        $approvedAt = $this->booking->approved_at
+            ? ($this->booking->approved_at instanceof Carbon
+                ? $this->booking->approved_at
+                : Carbon::parse($this->booking->approved_at))
+            : null;
+
         return new Content(
             view: 'emails.booking-approved',
             with: [
                 'userName' => $this->booking->user->name,
-                'roomName' => $this->booking->room->name,
-                'roomLocation' => $this->booking->room->location,
-                'roomFacilities' => $this->booking->room->facilities,
-                'bookingDate' => $this->booking->booking_date->format('d F Y'),
-                'dayName' => $this->booking->booking_date->translatedFormat('l'),
-                'startTime' => $this->booking->start_time->format('H:i'),
-                'endTime' => $this->booking->end_time->format('H:i'),
+                'roomName' => optional($this->booking->room)->name,
+                'roomLocation' => optional($this->booking->room)->location,
+                'roomFacilities' => optional($this->booking->room)->facilities,
+                'bookingDate' => $bookingDate->format('d F Y'),
+                'dayName' => $bookingDate->translatedFormat('l'),
+                'startTime' => $startTime->format('H:i'),
+                'endTime' => $endTime->format('H:i'),
                 'purpose' => $this->booking->purpose,
                 'participants' => $this->booking->participants,
-                'approvedBy' => $this->booking->approver->name ?? 'Admin',
-                'approvedAt' => $this->booking->approved_at->format('d F Y H:i'),
+                'approvedBy' => optional($this->booking->approver)->name ?? 'Admin',
+                'approvedAt' => $approvedAt ? $approvedAt->format('d F Y H:i') : null,
                 'bookingId' => $this->booking->id,
                 'detailUrl' => url("/bookings/{$this->booking->id}"),
             ],

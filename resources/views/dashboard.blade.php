@@ -180,6 +180,7 @@
 							<th class="px-6 py-3 text-left font-medium">Waktu</th>
 							<th class="px-6 py-3 text-left font-medium">Tujuan</th>
 							<th class="px-6 py-3 text-left font-medium">Status</th>
+							<th class="px-6 py-3 text-left font-medium">Aksi</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
@@ -189,7 +190,18 @@
 								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $booking->room->name ?? '-' }}</td>
 								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ \Illuminate\Support\Carbon::parse($booking->booking_date)->format('d M Y') }}</td>
 								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ substr($booking->start_time,0,5) }}–{{ substr($booking->end_time,0,5) }}</td>
-								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">{{ $booking->purpose ?? '-' }}</td>
+								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">
+									@if($booking->purpose)
+										<button type="button" data-purpose-modal-trigger data-purpose="{{ e($booking->purpose) }}" data-purpose-title="Tujuan · Pengajuan #{{ $booking->id }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+											<span>Lihat tujuan</span>
+											<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="h-3.5 w-3.5">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+											</svg>
+										</button>
+									@else
+										<span class="text-xs text-slate-400 dark:text-slate-500">-</span>
+									@endif
+								</td>
 								<td class="px-6 py-3">
 									@php
 										$statusColors = [
@@ -204,10 +216,26 @@
 										{{ ucfirst($booking->status) }}
 									</span>
 								</td>
+								<td class="px-6 py-3 text-slate-600 dark:text-slate-300">
+									<div class="flex flex-wrap items-center gap-2">
+										@if($booking->status === 'pending')
+											<a href="{{ route('bookings.edit', $booking) }}" class="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Edit</a>
+										@endif
+										@if(in_array($booking->status, ['pending', 'approved']))
+											<form action="{{ route('bookings.destroy', $booking) }}" method="POST" onsubmit="return confirm('Batalkan pengajuan ini?');">
+												@csrf
+												@method('DELETE')
+												<button type="submit" class="inline-flex items-center rounded-xl border border-red-200 dark:border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 transition">Batalkan</button>
+											</form>
+										@else
+											<span class="text-xs text-slate-400 dark:text-slate-500">-</span>
+										@endif
+									</div>
+								</td>
 							</tr>
 						@empty
 							<tr>
-								<td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">Belum ada pengajuan peminjaman.</td>
+								<td colspan="7" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">Belum ada pengajuan peminjaman.</td>
 							</tr>
 						@endforelse
 					</tbody>
@@ -216,4 +244,6 @@
 		</section>
 	</div>
 </div>
+
+@include('components.purpose-modal')
 @endsection

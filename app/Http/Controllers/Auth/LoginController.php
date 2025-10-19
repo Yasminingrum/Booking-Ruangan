@@ -211,7 +211,12 @@ class LoginController extends Controller
     public function refresh(Request $request)
     {
         // Delete old token
-        $request->user()->currentAccessToken()->delete();
+    /** @var \Laravel\Sanctum\PersonalAccessToken|null $currentToken */
+    $currentToken = $request->user()->currentAccessToken();
+
+        if ($currentToken) {
+            $currentToken->delete();
+        }
 
         // Create new token
         $token = $request->user()->createToken('auth_token')->plainTextToken;

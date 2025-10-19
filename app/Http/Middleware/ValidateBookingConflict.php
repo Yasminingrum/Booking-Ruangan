@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Booking;
+use Carbon\Carbon;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -64,8 +65,8 @@ class ValidateBookingConflict
             $errorMessage = sprintf(
                 'Konflik jadwal terdeteksi! Ruangan sudah dipesan pada %s dari %s sampai %s oleh %s.',
                 $conflict->booking_date->format('d M Y'),
-                $conflict->start_time->format('H:i'),
-                $conflict->end_time->format('H:i'),
+                Carbon::parse($conflict->start_time)->format('H:i'),
+                Carbon::parse($conflict->end_time)->format('H:i'),
                 $conflict->user->name
             );
 
@@ -78,8 +79,8 @@ class ValidateBookingConflict
                         'id' => $conflict->id,
                         'user' => $conflict->user->name,
                         'date' => $conflict->booking_date->format('Y-m-d'),
-                        'start_time' => $conflict->start_time->format('H:i:s'),
-                        'end_time' => $conflict->end_time->format('H:i:s'),
+                        'start_time' => Carbon::parse($conflict->start_time)->format('H:i:s'),
+                        'end_time' => Carbon::parse($conflict->end_time)->format('H:i:s'),
                         'status' => $conflict->status
                     ]
                 ], 409); // 409 Conflict

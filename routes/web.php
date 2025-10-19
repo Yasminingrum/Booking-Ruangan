@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\UserBookingController;
+use App\Http\Controllers\NotificationController;
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Booking;
@@ -37,8 +38,19 @@ Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 // Authenticated user routes
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/bookings/calendar', [UserBookingController::class, 'calendar'])->name('bookings.calendar');
+    Route::get('/bookings/history', [UserBookingController::class, 'history'])->name('bookings.history');
     Route::get('/bookings/create/{room}', [UserBookingController::class, 'create'])->name('bookings.create');
+    Route::get('/bookings/{booking}/edit', [UserBookingController::class, 'edit'])->name('bookings.edit');
+    Route::put('/bookings/{booking}', [UserBookingController::class, 'update'])->name('bookings.update');
+    Route::delete('/bookings/{booking}', [UserBookingController::class, 'destroy'])->name('bookings.destroy');
     Route::post('/bookings', [UserBookingController::class, 'store'])->name('bookings.store');
+
+    Route::get('/notifications', [NotificationController::class, 'webIndex'])->name('notifications.index');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'webMarkAllAsRead'])->name('notifications.mark-all-read');
+    Route::delete('/notifications/read', [NotificationController::class, 'webDeleteAllRead'])->name('notifications.delete-read');
+    Route::post('/notifications/{notification}/toggle-read', [NotificationController::class, 'webToggleRead'])->name('notifications.toggle-read');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'webDestroy'])->name('notifications.destroy');
 });
 
 // Admin routes - protected by role middleware

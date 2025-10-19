@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\BookingHistory;
 use App\Models\Notification;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -94,17 +95,19 @@ class BookingController extends Controller
         DB::beginTransaction();
 
         try {
+            $data = $request->validated();
+
             // Create booking
             $booking = Booking::create([
                 'user_id' => Auth::id(),
-                'room_id' => $request->room_id,
-                'booking_date' => $request->booking_date,
-                'start_time' => $request->start_time,
-                'end_time' => $request->end_time,
-                'purpose' => $request->purpose,
-                'participants' => $request->participants,
-                'is_recurring' => $request->is_recurring ?? false,
-                'recurring_pattern' => $request->recurring_pattern,
+                'room_id' => $data['room_id'],
+                'booking_date' => $data['booking_date'],
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
+                'purpose' => $data['purpose'],
+                'participants' => $data['participants'],
+                'is_recurring' => $data['is_recurring'] ?? false,
+                'recurring_pattern' => $data['recurring_pattern'] ?? null,
                 'status' => 'pending',
             ]);
 
@@ -127,7 +130,7 @@ class BookingController extends Controller
                     'title' => 'Pengajuan Peminjaman Baru',
                     'message' => Auth::user()->name . ' mengajukan peminjaman ' .
                                  $booking->room->name . ' pada ' .
-                                 \Carbon\Carbon::parse($booking->booking_date)->format('d M Y'),
+                                 Carbon::parse($booking->booking_date)->format('d M Y'),
                     'related_booking_id' => $booking->id,
                 ]);
             }

@@ -5,12 +5,14 @@ namespace App\Mail;
 use App\Models\Booking;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Carbon\Carbon;
 
-class BookingCreated extends Mailable
+class BookingCreated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -41,6 +43,13 @@ class BookingCreated extends Mailable
      */
     public function content(): Content
     {
+        $bookingDate = $this->booking->booking_date instanceof Carbon
+            ? $this->booking->booking_date
+            : Carbon::parse($this->booking->booking_date);
+
+        $startTime = Carbon::parse($this->booking->start_time);
+        $endTime = Carbon::parse($this->booking->end_time);
+
         return new Content(
             view: 'emails.booking-created',
             with: [
@@ -48,11 +57,11 @@ class BookingCreated extends Mailable
                 'peminjamName' => $this->booking->user->name,
                 'peminjamEmail' => $this->booking->user->email,
                 'peminjamPhone' => $this->booking->user->phone,
-                'roomName' => $this->booking->room->name,
-                'roomLocation' => $this->booking->room->location,
-                'bookingDate' => $this->booking->booking_date->format('d F Y'),
-                'startTime' => $this->booking->start_time->format('H:i'),
-                'endTime' => $this->booking->end_time->format('H:i'),
+                'roomName' => optional($this->booking->room)->name,
+                'roomLocation' => optional($this->booking->room)->location,
+                'bookingDate' => $bookingDate->format('d F Y'),
+                'startTime' => $startTime->format('H:i'),
+                'endTime' => $endTime->format('H:i'),
                 'purpose' => $this->booking->purpose,
                 'participants' => $this->booking->participants,
                 'bookingId' => $this->booking->id,
