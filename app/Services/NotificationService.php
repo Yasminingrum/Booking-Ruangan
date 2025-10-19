@@ -6,14 +6,23 @@ use App\Models\Booking;
 use App\Models\Notification;
 use App\Models\User;
 use App\Mail\BookingCreated;
-use App\Mail\BookingApproved;
-use App\Mail\BookingRejected;
+use App\Services\BrevoEmailService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class NotificationService
 {
+    /**
+     * @var BrevoEmailService
+     */
+    protected $brevo;
+
+    public function __construct(BrevoEmailService $brevoEmailService)
+    {
+        $this->brevo = $brevoEmailService;
+    }
+
     /**
      * Kirim notifikasi booking baru dibuat (ke semua admin)
      *
@@ -101,16 +110,23 @@ class NotificationService
                 'is_read' => false,
             ]);
 
-            // Send email (queued)
-            try {
-                Mail::to($booking->user->email)->queue(new BookingApproved($booking));
-            } catch (\Exception $e) {
-                Log::error('Failed to send booking approved email', [
-                    'booking_id' => $booking->id,
-                    'user_id' => $booking->user_id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $params = [
+                'nama_user' => $booking->user->name,
+                'nama_proyek' => $booking->purpose ?? $booking->room->name,
+                'tanggal_pengajuan' => $this->formatDate($booking->created_at, 'd F Y'),
+                'tanggal_approval' => $this->formatDate($booking->approved_at ?? now(), 'd F Y'),
+            ];
+
+            $this->brevo->sendTemplate(
+                'emails.brevo.booking-approved',
+                'Pengajuan Peminjaman Disetujui',
+                $booking->user->email,
+                $booking->user->name,
+                $params,
+                [
+                    'button_url' => $this->borrowerStatusUrl(),
+                ]
+            );
 
             Log::info('Booking approved notification sent', [
                 'booking_id' => $booking->id,
@@ -153,16 +169,29 @@ class NotificationService
                 'is_read' => false,
             ]);
 
-            // Send email (queued)
-            try {
-                Mail::to($booking->user->email)->queue(new BookingRejected($booking));
-            } catch (\Exception $e) {
-                Log::error('Failed to send booking rejected email', [
-                    'booking_id' => $booking->id,
-                    'user_id' => $booking->user_id,
-                    'error' => $e->getMessage(),
-                ]);
+            $params = [
+                'nama_user' => $booking->user->name,
+                'nama_proyek' => $booking->purpose ?? $booking->room->name,
+                'tanggal_pengajuan' => $this->formatDate($booking->created_at, 'd F Y'),
+            ];
+
+            $viewData = [
+                'button_url' => $this->borrowerStatusUrl(),
+            ];
+
+            if (!empty($booking->rejection_reason)) {
+                $viewData['alasan_penolakan'] = $booking->rejection_reason;
+                $params['alasan_penolakan'] = $booking->rejection_reason;
             }
+
+            $this->brevo->sendTemplate(
+                'emails.brevo.booking-rejected',
+                'Pengajuan Peminjaman Ditolak',
+                $booking->user->email,
+                $booking->user->name,
+                $params,
+                $viewData
+            );
 
             Log::info('Booking rejected notification sent', [
                 'booking_id' => $booking->id,
@@ -391,5 +420,14 @@ class NotificationService
         }
 
         return Carbon::parse($value)->format($format);
+    }
+
+    private function borrowerStatusUrl(): string
+    {
+        try {
+            return route('bookings.history');
+        } catch (\Throwable $e) {
+            return url('/dashboard');
+        }
     }
 }

@@ -6,6 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @method mixed input(string $key = null, $default = null)
+ * @method bool has(string $key)
+ * @method void merge(array $input)
+ * @method bool isMethod(string $method)
+ * @method mixed route(string $name = null, $default = null)
+ */
 class RoomRequest extends FormRequest
 {
     /**
@@ -14,7 +21,7 @@ class RoomRequest extends FormRequest
     public function authorize(): bool
     {
         // Hanya admin yang bisa mengelola ruangan
-        return auth::check() && auth::user()->role === 'admin';
+        return Auth::check() && Auth::user()->role === 'admin';
     }
 
     /**
@@ -130,7 +137,7 @@ class RoomRequest extends FormRequest
         // Trim whitespace dari nama
         if ($this->has('name')) {
             $this->merge([
-                'name' => trim($this->name),
+                'name' => trim((string) $this->input('name')),
             ]);
         }
     }
@@ -147,7 +154,7 @@ class RoomRequest extends FormRequest
             // Validasi khusus: jika ruangan mau di-nonaktifkan,
             // cek apakah ada booking approved yang akan datang
             if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-                if ($this->has('is_active') && $this->is_active === false) {
+                if ($this->has('is_active') && (bool) $this->input('is_active') === false) {
                     $roomId = $this->route('room');
                     $hasUpcomingBookings = \App\Models\Booking::where('room_id', $roomId)
                         ->where('status', 'approved')

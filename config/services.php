@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'brevo' => [
+        'api_key' => env('BREVO_API_KEY'),
+        'sender_email' => env('BREVO_SENDER_EMAIL'),
+        'sender_name' => env('BREVO_SENDER_NAME', env('APP_NAME', 'Laravel')),
+        'endpoint' => env('BREVO_API_ENDPOINT', 'https://api.brevo.com/v3/smtp/email'),
+        'templates' => [
+            'approved' => env('BREVO_TEMPLATE_APPROVED_URL'),
+            'rejected' => env('BREVO_TEMPLATE_REJECTED_URL'),
+        ],
+    ],
+
 ];

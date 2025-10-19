@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminSettingController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\UserBookingController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReportController;
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Booking;
@@ -79,4 +80,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/settings', [AdminSettingController::class, 'index'])->name('admin.settings.index');
     Route::post('/admin/settings', [AdminSettingController::class, 'update'])->name('admin.settings.update');
     Route::post('/admin/settings/clear-cache', [AdminSettingController::class, 'clearCache'])->name('admin.settings.clear-cache');
+});
+
+// Kepala Sekolah routes
+Route::middleware(['auth', 'role:kepala_sekolah'])->group(function () {
+    Route::get('/kepala-sekolah/dashboard', [ReportController::class, 'index'])->name('reports.index');
+    Route::post('/kepala-sekolah/reports/export/pdf', [ReportController::class, 'exportPDF'])->name('reports.export.pdf');
+    Route::post('/kepala-sekolah/reports/export/excel', [ReportController::class, 'exportExcel'])->name('reports.export.excel');
 });

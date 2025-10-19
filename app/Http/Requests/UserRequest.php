@@ -7,6 +7,14 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @method mixed input(string $key = null, $default = null)
+ * @method bool has(string $key)
+ * @method bool filled(string $key)
+ * @method void merge(array $input)
+ * @method bool isMethod(string $method)
+ * @method mixed route(string $name = null, $default = null)
+ */
 class UserRequest extends FormRequest
 {
     /**
@@ -15,7 +23,7 @@ class UserRequest extends FormRequest
     public function authorize(): bool
     {
         // Hanya admin yang bisa mengelola user
-        return auth::check() && auth::user()->role === 'admin';
+        return Auth::check() && Auth::user()->role === 'admin';
     }
 
     /**
@@ -154,13 +162,13 @@ class UserRequest extends FormRequest
         // Trim whitespace
         if ($this->has('name')) {
             $this->merge([
-                'name' => trim($this->name),
+                'name' => trim((string) $this->input('name')),
             ]);
         }
 
         if ($this->has('email')) {
             $this->merge([
-                'email' => strtolower(trim($this->email)),
+                'email' => strtolower(trim((string) $this->input('email'))),
             ]);
         }
 
@@ -172,9 +180,11 @@ class UserRequest extends FormRequest
         }
 
         // Hapus password jika kosong pada update
-        if (($this->isMethod('PUT') || $this->isMethod('PATCH')) && empty($this->password)) {
-            $this->request->remove('password');
-            $this->request->remove('password_confirmation');
+        if (($this->isMethod('PUT') || $this->isMethod('PATCH')) && !$this->filled('password')) {
+            $this->merge([
+                'password' => null,
+                'password_confirmation' => null,
+            ]);
         }
     }
 
@@ -192,7 +202,9 @@ class UserRequest extends FormRequest
                 $userId = $this->route('user');
                 $user = \App\Models\User::find($userId);
 
-                if ($user && $user->role === 'admin' && $this->role !== 'admin') {
+                $incomingRole = $this->input('role');
+
+                if ($user && $user->role === 'admin' && $incomingRole !== 'admin') {
                     // Cek apakah ini admin terakhir
                     $adminCount = \App\Models\User::where('role', 'admin')
                         ->where('is_active', true)
@@ -207,7 +219,9 @@ class UserRequest extends FormRequest
                 }
 
                 // Validasi: tidak bisa menonaktifkan admin terakhir
-                if ($user && $user->role === 'admin' && $this->has('is_active') && $this->is_active === false) {
+                $isActiveFlag = $this->input('is_active');
+
+                if ($user && $user->role === 'admin' && $this->has('is_active') && (bool) $isActiveFlag === false) {
                     $activeAdminCount = \App\Models\User::where('role', 'admin')
                         ->where('is_active', true)
                         ->where('id', '!=', $userId)
@@ -225,7 +239,8 @@ class UserRequest extends FormRequest
             // Validasi email domain sekolah (opsional, bisa disesuaikan)
             if ($this->has('email')) {
                 $allowedDomains = ['palembangharapan.sch.id', 'gmail.com', 'yahoo.com'];
-                $emailDomain = substr(strrchr($this->email, "@"), 1);
+                $emailValue = (string) $this->input('email');
+                $emailDomain = substr(strrchr($emailValue, "@"), 1);
 
                 // Uncomment jika ingin enforce domain tertentu
                 // if (!in_array($emailDomain, $allowedDomains)) {

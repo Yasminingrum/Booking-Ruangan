@@ -13,6 +13,241 @@ use Illuminate\Support\Facades\Auth;
 
 class ReportController extends Controller
 {
+    private const DAILY_OPERATIONAL_HOURS = 12;
+
+    public const ROOM_TYPE_LABELS = [
+        Room::TYPE_LABORATORIUM => 'Laboratorium',
+        Room::TYPE_RUANG_MUSIK => 'Ruang Musik',
+        Room::TYPE_AUDIO_VISUAL => 'Audio Visual',
+        Room::TYPE_LAPANGAN_BASKET => 'Lapangan Basket',
+        Room::TYPE_KOLAM_RENANG => 'Kolam Renang',
+    ];
+
+    /**
+     * Dashboard visual untuk Kepala Sekolah
+     */
+    public function index(Request $request)
+    {
+        $period = $request->input('period', 'month');
+    $category = $request->input('category');
+    $knownCategories = array_keys(self::ROOM_TYPE_LABELS);
+    $isOtherCategory = $category === 'other';
+
+        $defaultStart = match ($period) {
+            'day' => now()->startOfDay(),
+            'week' => now()->startOfWeek(),
+            'year' => now()->startOfYear(),
+            default => now()->startOfMonth(),
+        };
+
+        $defaultEnd = match ($period) {
+            'day' => now()->endOfDay(),
+            'week' => now()->endOfWeek(),
+            'year' => now()->endOfYear(),
+            default => now()->endOfMonth(),
+        };
+
+        $dateFrom = $this->parseDate($request->input('date_from'), $defaultStart)->startOfDay();
+        $dateTo = $this->parseDate($request->input('date_to'), $defaultEnd)->endOfDay();
+
+        if ($dateFrom->greaterThan($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo->copy()->startOfDay(), $dateFrom->copy()->endOfDay()];
+        }
+
+        $roomsQuery = Room::active();
+        if ($category) {
+            if ($isOtherCategory) {
+                $roomsQuery->where(function ($query) use ($knownCategories) {
+                    $query->whereNull('type')
+                          ->orWhereNotIn('type', $knownCategories);
+                });
+            } else {
+                $roomsQuery->where('type', $category);
+            }
+        }
+        $rooms = $roomsQuery->orderBy('name')->get();
+
+        $bookingsBaseQuery = Booking::with(['room', 'user'])
+            ->whereBetween('booking_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
+            ->when($category, function ($query) use ($category, $isOtherCategory, $knownCategories) {
+                $query->whereHas('room', function ($roomQuery) use ($category, $isOtherCategory, $knownCategories) {
+                    if ($isOtherCategory) {
+                        $roomQuery->where(function ($sub) use ($knownCategories) {
+                            $sub->whereNull('type')
+                                ->orWhereNotIn('type', $knownCategories);
+                        });
+                    } else {
+                        $roomQuery->where('type', $category);
+                    }
+                });
+            });
+
+        $totalBookings = (clone $bookingsBaseQuery)->count();
+        $pendingApproval = (clone $bookingsBaseQuery)->where('status', Booking::STATUS_PENDING)->count();
+        $approvedBookings = (clone $bookingsBaseQuery)->where('status', Booking::STATUS_APPROVED)->count();
+
+        $popularRoom = (clone $bookingsBaseQuery)
+            ->select('room_id', DB::raw('COUNT(*) as total'))
+            ->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_COMPLETED])
+            ->groupBy('room_id')
+            ->orderByDesc('total')
+            ->with('room')
+            ->first();
+
+        $daysRange = $dateFrom->diffInDays($dateTo) + 1;
+        $availableHoursTotal = max(1, ($rooms->count() ?: Room::active()->count()) * $daysRange * self::DAILY_OPERATIONAL_HOURS);
+
+        $roomStats = $rooms->map(function (Room $room) use ($dateFrom, $dateTo) {
+            $bookings = $room->bookings()
+                ->whereBetween('booking_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
+                ->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_COMPLETED])
+                ->get();
+
+            $totalBookings = $bookings->count();
+            $totalMinutes = $bookings->sum(function (Booking $booking) {
+                $start = Carbon::parse($booking->start_time);
+                $end = Carbon::parse($booking->end_time);
+                return max(0, $start->diffInMinutes($end));
+            });
+
+            $totalHours = round($totalMinutes / 60, 2);
+            $daysRange = max(1, Carbon::parse($dateFrom)->diffInDays($dateTo) + 1);
+            $availableHours = $daysRange * self::DAILY_OPERATIONAL_HOURS;
+            $utilization = $availableHours > 0
+                ? round(($totalHours / $availableHours) * 100, 2)
+                : 0;
+
+            return [
+                'room' => $room,
+                'total_bookings' => $totalBookings,
+                'total_hours' => $totalHours,
+                'available_hours' => $availableHours,
+                'utilization' => $utilization,
+            ];
+        });
+
+        $totalHoursUsed = $roomStats->sum('total_hours');
+        $averageUtilization = $availableHoursTotal > 0
+            ? round(($totalHoursUsed / $availableHoursTotal) * 100, 2)
+            : 0;
+
+        $utilizationChart = $roomStats->map(function ($stat) {
+            return [
+                'name' => $stat['room']->name,
+                'value' => $stat['utilization'],
+            ];
+        })->values();
+
+        $bookingsForDistribution = (clone $bookingsBaseQuery)
+            ->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_COMPLETED])
+            ->get();
+
+        $hourDistribution = $this->calculateHourDistribution($bookingsForDistribution);
+
+        $categorySummary = $roomStats
+            ->groupBy(fn ($stat) => $stat['room']->type)
+            ->map(function ($items, $type) {
+                $totalBookings = $items->sum('total_bookings');
+                $totalHours = $items->sum('total_hours');
+                $avgUtilization = $items->count() ? round($items->avg('utilization'), 2) : 0;
+
+                return [
+                    'category' => self::ROOM_TYPE_LABELS[$type] ?? ucfirst(str_replace('_', ' ', $type ?? 'Lainnya')),
+                    'total_bookings' => $totalBookings,
+                    'total_hours' => $totalHours,
+                    'avg_utilization' => $avgUtilization,
+                ];
+            })
+            ->values();
+
+        $filters = [
+            'date_from' => $dateFrom->toDateString(),
+            'date_to' => $dateTo->toDateString(),
+            'period' => $period,
+            'category' => $category,
+        ];
+
+        $categoryOptions = collect(['' => 'Semua Kategori'])
+            ->merge(self::ROOM_TYPE_LABELS)
+            ->merge(['other' => 'Kategori Lainnya']);
+
+        return view('headmaster.dashboard', [
+            'filters' => $filters,
+            'totalBookings' => $totalBookings,
+            'pendingApproval' => $pendingApproval,
+            'popularRoom' => $popularRoom,
+            'averageUtilization' => $averageUtilization,
+            'utilizationChart' => $utilizationChart,
+            'hourDistribution' => $hourDistribution,
+            'roomStats' => $roomStats,
+            'categorySummary' => $categorySummary,
+            'categoryOptions' => $categoryOptions,
+            'periodLabel' => $this->buildPeriodLabel($dateFrom, $dateTo),
+        ]);
+    }
+
+    private function parseDate(?string $value, Carbon $fallback): Carbon
+    {
+        try {
+            return $value ? Carbon::parse($value) : $fallback->copy();
+        } catch (\Exception $e) {
+            return $fallback->copy();
+        }
+    }
+
+    private function buildPeriodLabel(Carbon $from, Carbon $to): string
+    {
+        if ($from->isSameDay($to)) {
+            return $from->translatedFormat('d M Y');
+        }
+
+        return sprintf('%s – %s',
+            $from->translatedFormat('d M Y'),
+            $to->translatedFormat('d M Y')
+        );
+    }
+
+    private function calculateHourDistribution($bookings): array
+    {
+        $buckets = [
+            'Pagi (07-11)' => 0,
+            'Siang (11-15)' => 0,
+            'Sore (15-18)' => 0,
+            'Malam (18-22)' => 0,
+        ];
+
+        foreach ($bookings as $booking) {
+            $start = Carbon::parse($booking->start_time ?? '07:00');
+            $end = Carbon::parse($booking->end_time ?? '08:00');
+            $minutes = max(30, $start->diffInMinutes($end));
+
+            $hour = (int) $start->format('H');
+
+            if ($hour < 11) {
+                $buckets['Pagi (07-11)'] += $minutes;
+            } elseif ($hour < 15) {
+                $buckets['Siang (11-15)'] += $minutes;
+            } elseif ($hour < 18) {
+                $buckets['Sore (15-18)'] += $minutes;
+            } else {
+                $buckets['Malam (18-22)'] += $minutes;
+            }
+        }
+
+        $total = array_sum($buckets) ?: 1;
+
+        return collect($buckets)->map(function ($minutes, $label) use ($total) {
+            $hours = round($minutes / 60, 1);
+            $percentage = round(($minutes / $total) * 100, 1);
+
+            return [
+                'label' => $label,
+                'hours' => $hours,
+                'percentage' => $percentage,
+            ];
+        })->values()->toArray();
+    }
+
     /**
      * FR-18: Display dashboard summary
      * Statistik ringkasan untuk Admin/Kepala Sekolah
@@ -252,7 +487,7 @@ class ReportController extends Controller
             'date_from' => $dateFrom->format('d M Y'),
             'date_to' => $dateTo->format('d M Y'),
             'generated_at' => now()->format('d M Y H:i'),
-            'generated_by' => auth::user()->name,
+            'generated_by' => Auth::user()->name,
         ];
 
         if ($request->type === 'detail') {

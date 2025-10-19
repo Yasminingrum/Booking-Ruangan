@@ -6,6 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @method mixed input(string $key = null, $default = null)
+ * @method bool has(string $key)
+ * @method bool filled(string $key)
+ * @method void merge(array $input)
+ * @method bool isMethod(string $method)
+ */
 class BookingRequest extends FormRequest
 {
     /**
@@ -14,7 +21,7 @@ class BookingRequest extends FormRequest
     public function authorize(): bool
     {
         // Hanya user yang sudah login yang bisa membuat booking
-        return auth::check();
+        return Auth::check();
     }
 
     /**
@@ -80,7 +87,7 @@ class BookingRequest extends FormRequest
 
         // Jika ini adalah update dan user adalah admin
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            if (auth::user()?->role === 'admin') {
+            if (Auth::user()?->role === 'admin') {
                 $rules['status'] = [
                     'nullable',
                     'string',
@@ -147,15 +154,17 @@ class BookingRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Pastikan format time sudah benar dengan menambahkan detik jika tidak ada
-        if ($this->has('start_time') && strlen($this->start_time) === 5) {
+        $startTime = $this->input('start_time');
+        if ($this->filled('start_time') && strlen($startTime) === 5) {
             $this->merge([
-                'start_time' => $this->start_time . ':00',
+                'start_time' => $startTime . ':00',
             ]);
         }
 
-        if ($this->has('end_time') && strlen($this->end_time) === 5) {
+        $endTime = $this->input('end_time');
+        if ($this->filled('end_time') && strlen($endTime) === 5) {
             $this->merge([
-                'end_time' => $this->end_time . ':00',
+                'end_time' => $endTime . ':00',
             ]);
         }
 
@@ -177,21 +186,27 @@ class BookingRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Validasi tambahan: cek apakah peserta tidak melebihi kapasitas ruangan
-            if ($this->room_id && $this->participants) {
-                $room = \App\Models\Room::find($this->room_id);
+            $roomId = $this->input('room_id');
+            $participants = (int) $this->input('participants');
 
-                if ($room && $this->participants > $room->capacity) {
+            if ($roomId && $participants) {
+                $room = \App\Models\Room::find($roomId);
+
+                if ($room && $participants > $room->capacity) {
                     $validator->errors()->add(
                         'participants',
-                        "Jumlah peserta ({$this->participants}) melebihi kapasitas ruangan ({$room->capacity})."
+                        "Jumlah peserta ({$participants}) melebihi kapasitas ruangan ({$room->capacity})."
                     );
                 }
             }
 
             // Validasi tambahan: cek durasi peminjaman tidak lebih dari 12 jam
-            if ($this->start_time && $this->end_time) {
-                $start = \Carbon\Carbon::parse($this->start_time);
-                $end = \Carbon\Carbon::parse($this->end_time);
+            $startTimeValue = $this->input('start_time');
+            $endTimeValue = $this->input('end_time');
+
+            if ($startTimeValue && $endTimeValue) {
+                $start = \Carbon\Carbon::parse($startTimeValue);
+                $end = \Carbon\Carbon::parse($endTimeValue);
                 $duration = $end->diffInHours($start);
 
                 if ($duration > 12) {
