@@ -8,8 +8,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\BookingsExport;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+
 
 class ReportController extends Controller
 {
@@ -477,22 +480,86 @@ class ReportController extends Controller
         $request->validate([
             'date_from' => 'required|date',
             'date_to' => 'required|date|after_or_equal:date_from',
-            'type' => 'required|in:detail,utilization,summary',
+            'type' => 'required|in:detail,summary',
         ]);
 
         $dateFrom = Carbon::parse($request->date_from);
         $dateTo = Carbon::parse($request->date_to);
+        $category = $request->input('category');
+
+        // Ambil data roomStats menggunakan logic yang sama dengan index()
+        $roomsQuery = Room::active();
+        if ($category && $category !== '') {
+            if ($category === 'other') {
+                $knownCategories = array_keys(self::ROOM_TYPE_LABELS);
+                $roomsQuery->where(function ($query) use ($knownCategories) {
+                    $query->whereNull('type')
+                          ->orWhereNotIn('type', $knownCategories);
+                });
+            } else {
+                $roomsQuery->where('type', $category);
+            }
+        }
+        $rooms = $roomsQuery->orderBy('name')->get();
+
+        $roomStats = $rooms->map(function (Room $room) use ($dateFrom, $dateTo) {
+            $bookings = $room->bookings()
+                ->whereBetween('booking_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
+                ->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_COMPLETED])
+                ->get();
+
+            $totalBookings = $bookings->count();
+            $totalMinutes = $bookings->sum(function (Booking $booking) {
+                $start = Carbon::parse($booking->start_time);
+                $end = Carbon::parse($booking->end_time);
+                return max(0, $start->diffInMinutes($end));
+            });
+
+            $totalHours = round($totalMinutes / 60, 2);
+            $daysRange = max(1, $dateFrom->diffInDays($dateTo) + 1);
+            $availableHours = $daysRange * self::DAILY_OPERATIONAL_HOURS;
+            $utilization = $availableHours > 0
+                ? round(($totalHours / $availableHours) * 100, 2)
+                : 0;
+
+            return [
+                'room' => $room,
+                'total_bookings' => $totalBookings,
+                'total_hours' => $totalHours,
+                'available_hours' => $availableHours,
+                'utilization' => $utilization,
+            ];
+        });
 
         $data = [
-            'date_from' => $dateFrom->format('d M Y'),
-            'date_to' => $dateTo->format('d M Y'),
-            'generated_at' => now()->format('d M Y H:i'),
-            'generated_by' => Auth::user()->name,
+            'date_from' => $dateFrom->translatedFormat('d F Y'),
+            'date_to' => $dateTo->translatedFormat('d F Y'),
+            'generated_at' => now()->translatedFormat('d F Y H:i'),
+            'generated_by' => auth::user()->name,
+            'roomStats' => $roomStats,
         ];
 
-        if ($request->type === 'detail') {
+        if ($request->type === 'summary') {
+            $bookingsQuery = Booking::whereBetween('booking_date', [
+                $dateFrom->toDateString(),
+                $dateTo->toDateString()
+            ]);
+
+            $data['summary'] = [
+                'total_bookings' => (clone $bookingsQuery)->count(),
+                'approved' => (clone $bookingsQuery)->where('status', 'approved')->count(),
+                'rejected' => (clone $bookingsQuery)->where('status', 'rejected')->count(),
+                'cancelled' => (clone $bookingsQuery)->where('status', 'cancelled')->count(),
+            ];
+
+            $pdf = Pdf::loadView('reports.summary-pdf', $data)
+                     ->setPaper('a4', 'portrait');
+
+            $filename = 'laporan-ringkasan-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.pdf';
+        } else {
+            // Detail type
             $bookings = Booking::with(['room', 'user'])
-                ->whereBetween('booking_date', [$request->date_from, $request->date_to])
+                ->whereBetween('booking_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
                 ->whereIn('status', ['approved', 'completed'])
                 ->orderBy('booking_date')
                 ->orderBy('start_time')
@@ -501,77 +568,78 @@ class ReportController extends Controller
             $data['bookings'] = $bookings;
             $data['total'] = $bookings->count();
 
-            $pdf = Pdf::loadView('reports.detail-pdf', $data);
-            return $pdf->download('laporan-detail-peminjaman-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.pdf');
+            $pdf = Pdf::loadView('reports.detail-pdf', $data)
+                     ->setPaper('a4', 'landscape');
+
+            $filename = 'laporan-detail-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.pdf';
         }
 
-        if ($request->type === 'utilization') {
-            $rooms = Room::where('is_active', true)->get();
-            $utilization = [];
-
-            foreach ($rooms as $room) {
-                $totalBookings = Booking::where('room_id', $room->id)
-                    ->whereBetween('booking_date', [$request->date_from, $request->date_to])
-                    ->whereIn('status', ['approved', 'completed'])
-                    ->count();
-
-                $totalHours = Booking::where('room_id', $room->id)
-                    ->whereBetween('booking_date', [$request->date_from, $request->date_to])
-                    ->whereIn('status', ['approved', 'completed'])
-                    ->get()
-                    ->sum(function($booking) {
-                        $start = Carbon::parse($booking->start_time);
-                        $end = Carbon::parse($booking->end_time);
-                        return $start->diffInHours($end);
-                    });
-
-                $totalDays = $dateFrom->diffInDays($dateTo) + 1;
-                $availableHours = $totalDays * 8;
-                $utilizationPercentage = $availableHours > 0
-                    ? round(($totalHours / $availableHours) * 100, 2)
-                    : 0;
-
-                $utilization[] = [
-                    'room' => $room,
-                    'total_bookings' => $totalBookings,
-                    'total_hours' => $totalHours,
-                    'utilization_percentage' => $utilizationPercentage,
-                ];
-            }
-
-            $data['utilization'] = $utilization;
-
-            $pdf = Pdf::loadView('reports.utilization-pdf', $data);
-            return $pdf->download('laporan-utilisasi-ruangan-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.pdf');
-        }
-
-        if ($request->type === 'summary') {
-            $summary = [
-                'total_bookings' => Booking::whereBetween('booking_date', [$request->date_from, $request->date_to])->count(),
-                'approved' => Booking::whereBetween('booking_date', [$request->date_from, $request->date_to])
-                    ->where('status', 'approved')->count(),
-                'rejected' => Booking::whereBetween('booking_date', [$request->date_from, $request->date_to])
-                    ->where('status', 'rejected')->count(),
-                'cancelled' => Booking::whereBetween('booking_date', [$request->date_from, $request->date_to])
-                    ->where('status', 'cancelled')->count(),
-            ];
-
-            $data['summary'] = $summary;
-
-            $pdf = Pdf::loadView('reports.summary-pdf', $data);
-            return $pdf->download('laporan-ringkasan-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.pdf');
-        }
+        return $pdf->download($filename);
     }
 
     /**
-     * Export report to Excel (optional feature)
+     * Export Laporan ke Excel
      */
     public function exportExcel(Request $request)
     {
-        // TODO: Implement Excel export using Maatwebsite\Excel
-        return response()->json([
-            'success' => false,
-            'message' => 'Excel export belum diimplementasikan',
-        ], 501);
+        $request->validate([
+            'date_from' => 'required|date',
+            'date_to' => 'required|date|after_or_equal:date_from',
+        ]);
+
+        $dateFrom = Carbon::parse($request->date_from);
+        $dateTo = Carbon::parse($request->date_to);
+        $category = $request->input('category');
+
+        // Ambil data roomStats (sama seperti di exportPDF)
+        $roomsQuery = Room::active();
+        if ($category && $category !== '') {
+            if ($category === 'other') {
+                $knownCategories = array_keys(self::ROOM_TYPE_LABELS);
+                $roomsQuery->where(function ($query) use ($knownCategories) {
+                    $query->whereNull('type')
+                          ->orWhereNotIn('type', $knownCategories);
+                });
+            } else {
+                $roomsQuery->where('type', $category);
+            }
+        }
+        $rooms = $roomsQuery->orderBy('name')->get();
+
+        $roomStats = $rooms->map(function (Room $room) use ($dateFrom, $dateTo) {
+            $bookings = $room->bookings()
+                ->whereBetween('booking_date', [$dateFrom->toDateString(), $dateTo->toDateString()])
+                ->whereIn('status', [Booking::STATUS_APPROVED, Booking::STATUS_COMPLETED])
+                ->get();
+
+            $totalBookings = $bookings->count();
+            $totalMinutes = $bookings->sum(function (Booking $booking) {
+                $start = Carbon::parse($booking->start_time);
+                $end = Carbon::parse($booking->end_time);
+                return max(0, $start->diffInMinutes($end));
+            });
+
+            $totalHours = round($totalMinutes / 60, 2);
+            $daysRange = max(1, $dateFrom->diffInDays($dateTo) + 1);
+            $availableHours = $daysRange * self::DAILY_OPERATIONAL_HOURS;
+            $utilization = $availableHours > 0
+                ? round(($totalHours / $availableHours) * 100, 2)
+                : 0;
+
+            return [
+                'room' => $room,
+                'total_bookings' => $totalBookings,
+                'total_hours' => $totalHours,
+                'available_hours' => $availableHours,
+                'utilization' => $utilization,
+            ];
+        });
+
+        $filename = 'laporan-utilisasi-' . $dateFrom->format('Y-m-d') . '-to-' . $dateTo->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(
+            new BookingsExport($dateFrom, $dateTo, $roomStats),
+            $filename
+        );
     }
 }
