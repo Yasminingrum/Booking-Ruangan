@@ -31,7 +31,7 @@
   <!-- Borrowers Table -->
   <div class="bg-white rounded-xl shadow border">
     <div class="px-6 py-4 border-b">
-      <h3 class="font-semibold text-gray-800">Semua Pmeinjam</h3>
+      <h3 class="font-semibold text-gray-800">Semua Peminjam</h3>
     </div>
     <div class="overflow-x-auto">
       <table class="w-full text-sm">

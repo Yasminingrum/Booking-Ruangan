@@ -46,14 +46,14 @@
           </tr>
         </thead>
         <tbody>
-          @forelse($staff as $Staff)
+          @forelse($staff as $staffMember)
             <tr class="border-b hover:bg-gray-50">
               <td class="px-6 py-4">{{ $loop->iteration + ($staff->currentPage() - 1) * $staff->perPage() }}</td>
-              <td class="px-6 py-4 font-medium">{{ $Staff->name }}</td>
-              <td class="px-6 py-4 text-gray-600">{{ $Staff->email }}</td>
-              <td class="px-6 py-4 text-gray-600">{{ $Staff->phone ?? '-' }}</td>
+              <td class="px-6 py-4 font-medium">{{ $staffMember->name }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ $staffMember->email }}</td>
+              <td class="px-6 py-4 text-gray-600">{{ $staffMember->phone ?? '-' }}</td>
               <td class="px-6 py-4">
-                @if($Staff->is_active)
+                @if($staffMember->is_active)
                   <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Aktif</span>
                 @else
                   <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700">Nonaktif</span>
@@ -61,8 +61,8 @@
               </td>
               <td class="px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
-                  <a href="{{ route('admin.users.edit', $staff) }}" class="text-yellow-600 hover:text-yellow-800">Edit</a>
-                  <form action="{{ route('admin.users.destroy', $staff) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus staff ini?')">
+                  <a href="{{ route('admin.users.edit', $staffMember) }}" class="text-yellow-600 hover:text-yellow-800">Edit</a>
+                  <form action="{{ route('admin.users.destroy', $staffMember) }}" method="POST" class="inline" onsubmit="return confirm('Yakin hapus staff ini?')">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="text-red-600 hover:text-red-800">Hapus</button>
@@ -73,7 +73,7 @@
           @empty
             <tr>
               <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                Belum ada data guru. <a href="{{ route('admin.users.create', 'kepala_sekolah') }}" class="text-blue-600 hover:underline">Tambah sekarang</a>
+                Belum ada data staff. <a href="{{ route('admin.users.create', 'kepala_sekolah') }}" class="text-blue-600 hover:underline">Tambah sekarang</a>
               </td>
             </tr>
           @endforelse
