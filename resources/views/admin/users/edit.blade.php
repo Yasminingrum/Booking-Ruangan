@@ -19,10 +19,10 @@
                 <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
                     Nama Lengkap <span class="text-red-500">*</span>
                 </label>
-                <input 
-                    type="text" 
-                    name="name" 
-                    id="name" 
+                <input
+                    type="text"
+                    name="name"
+                    id="name"
                     value="{{ old('name', $user->name) }}"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -41,10 +41,10 @@
                 <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                     Email <span class="text-red-500">*</span>
                 </label>
-                <input 
-                    type="email" 
-                    name="email" 
-                    id="email" 
+                <input
+                    type="email"
+                    name="email"
+                    id="email"
                     value="{{ old('email', $user->email) }}"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -63,10 +63,10 @@
                 <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                     Password Baru
                 </label>
-                <input 
-                    type="password" 
-                    name="password" 
-                    id="password" 
+                <input
+                    type="password"
+                    name="password"
+                    id="password"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                         'border-red-500' => $errors->has('password'),
@@ -85,10 +85,10 @@
                 <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">
                     Konfirmasi Password Baru
                 </label>
-                <input 
-                    type="password" 
-                    name="password_confirmation" 
-                    id="password_confirmation" 
+                <input
+                    type="password"
+                    name="password_confirmation"
+                    id="password_confirmation"
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     minlength="8"
                 >
@@ -99,10 +99,10 @@
                 <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
                     No. Telepon
                 </label>
-                <input 
-                    type="text" 
-                    name="phone" 
-                    id="phone" 
+                <input
+                    type="text"
+                    name="phone"
+                    id="phone"
                     value="{{ old('phone', $user->phone) }}"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -120,9 +120,9 @@
                 <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
                     Role <span class="text-red-500">*</span>
                 </label>
-                <select 
-                    name="role" 
-                    id="role" 
+                <select
+                    name="role"
+                    id="role"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                         'border-red-500' => $errors->has('role'),
@@ -142,12 +142,12 @@
 
             <!-- Status -->
             <div class="mb-6">
-                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="is_active" class="block text-sm font-medium text-gray-700 mb-2">
                     Status <span class="text-red-500">*</span>
                 </label>
-                <select 
-                    name="status" 
-                    id="status" 
+                <select
+                    name="is_active"
+                    id="is_active"
                     class="@class([
                         'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                         'border-red-500' => $errors->has('status'),
@@ -155,24 +155,24 @@
                     ])"
                     required
                 >
-                    <option value="active" {{ old('status', $user->status) == 'active' ? 'selected' : '' }}>Aktif</option>
-                    <option value="inactive" {{ old('status', $user->status) == 'inactive' ? 'selected' : '' }}>Tidak Aktif</option>
+                    <option value="1" {{ old('is_active', $user->is_active) == 1 ? 'selected' : '' }}>Aktif</option>
+                    <option value="0" {{ old('is_active', $user->is_active) == 0 ? 'selected' : '' }}>Tidak Aktif</option>
                 </select>
-                @error('status')
+                @error('is_active')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
             <!-- Action Buttons -->
             <div class="flex items-center justify-end space-x-3">
-                <a 
-                    href="{{ url()->previous() }}" 
+                <a
+                    href="{{ url()->previous() }}"
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                     Batal
                 </a>
-                <button 
-                    type="submit" 
+                <button
+                    type="submit"
                     class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     Update User

@@ -17,12 +17,12 @@ class AdminUserController extends Controller
     $teachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
             ->orderBy('name')
             ->paginate(10);
-        
+
     $totalTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])->count();
     $activeTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
-            ->where('status', 'active')
+            ->where('is_active', true)
             ->count();
-        
+
         return view('admin.users.teachers', compact('teachers', 'totalTeachers', 'activeTeachers'));
     }
 
@@ -34,12 +34,12 @@ class AdminUserController extends Controller
         $students = User::where('role', 'peminjam')
             ->orderBy('name')
             ->paginate(10);
-        
+
         $totalStudents = User::where('role', 'peminjam')->count();
         $activeStudents = User::where('role', 'peminjam')
-            ->where('status', 'active')
+            ->where('is_active', true)
             ->count();
-        
+
         return view('admin.users.students', compact('students', 'totalStudents', 'activeStudents'));
     }
 
@@ -67,7 +67,7 @@ class AdminUserController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
             'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
-            'status' => 'required|in:active,inactive',
+            'is_active' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -83,11 +83,11 @@ class AdminUserController extends Controller
             'password' => Hash::make($request->password),
             'phone' => $request->phone,
             'role' => $request->role,
-            'status' => $request->status,
+            'is_active' => $request->is_active,
         ]);
 
-    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
-            ? 'admin.users.teachers' 
+    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru'])
+            ? 'admin.users.teachers'
             : 'admin.users.students';
 
         return redirect()
@@ -117,7 +117,7 @@ class AdminUserController extends Controller
             'password' => 'nullable|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
             'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
-            'status' => 'required|in:active,inactive',
+            'is_active' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -132,7 +132,7 @@ class AdminUserController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'role' => $request->role,
-            'status' => $request->status,
+            'is_active' => $request->is_active,
         ];
 
         if ($request->filled('password')) {
@@ -141,8 +141,8 @@ class AdminUserController extends Controller
 
         $user->update($data);
 
-    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
-            ? 'admin.users.teachers' 
+    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru'])
+            ? 'admin.users.teachers'
             : 'admin.users.students';
 
         return redirect()
@@ -170,8 +170,8 @@ class AdminUserController extends Controller
         $role = $user->role;
         $user->delete();
 
-        $redirectRoute = in_array($role, ['kepala_sekolah', 'cleaning_service', 'guru']) 
-            ? 'admin.users.teachers' 
+        $redirectRoute = in_array($role, ['kepala_sekolah', 'cleaning_service', 'guru'])
+            ? 'admin.users.teachers'
             : 'admin.users.students';
 
         return redirect()

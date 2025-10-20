@@ -15,11 +15,11 @@ class AdminRoomController extends Controller
     public function index()
     {
         $rooms = Room::orderBy('name')->paginate(10);
-        
+
         $totalRooms = Room::count();
-        $availableRooms = Room::where('is_available', true)->count();
-        $unavailableRooms = Room::where('is_available', false)->count();
-        
+        $availableRooms = Room::where('is_active', true)->count();
+        $unavailableRooms = Room::where('is_active', false)->count();
+
         return view('admin.rooms.index', compact('rooms', 'totalRooms', 'availableRooms', 'unavailableRooms'));
     }
 
@@ -76,7 +76,7 @@ class AdminRoomController extends Controller
             ->with('user')
             ->orderBy('booking_date', 'desc')
             ->paginate(10);
-        
+
         return view('admin.rooms.show', compact('room', 'bookings'));
     }
 
@@ -101,7 +101,7 @@ class AdminRoomController extends Controller
             'capacity' => 'required|integer|min:1',
             'location' => 'required|string|max:255',
             'facilities' => 'nullable|string',
-            'is_available' => 'boolean',
+            'is_active' => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -116,7 +116,7 @@ class AdminRoomController extends Controller
             'capacity' => $request->capacity,
             'location' => $request->location,
             'facilities' => $request->facilities,
-            'is_available' => $request->has('is_available'),
+            'is_active' => $request->has('is_active'),
         ]);
 
         return redirect()
