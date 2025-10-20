@@ -26,11 +26,11 @@
         <div class="mb-4 rounded-md bg-white/10 p-3 text-sm">{{ session('status') }}</div>
       @endif
 
-      @php($currentRole = in_array(old('role'), ['guru','siswa']) ? old('role') : 'siswa')
+      @php($currentRole = in_array(old('role'), ['staff','peminjam']) ? old('role') : 'peminjam')
       <div class="mb-6" role="group" aria-labelledby="role-label">
         <p id="role-label" class="mb-2 text-sm text-gray-300">Daftar sebagai</p>
         <div class="grid grid-cols-2 gap-2">
-          @foreach (['guru' => 'Guru', 'siswa' => 'Siswa'] as $key => $label)
+          @foreach (['staff' => 'Staff', 'peminjam' => 'Peminjam'] as $key => $label)
             <button type="button" data-role="{{ $key }}" aria-pressed="{{ $currentRole === $key ? 'true' : 'false' }}"
               class="role-btn rounded-xl px-3 py-2 text-sm transition border {{ $currentRole === $key ? 'bg-white/20 border-white/40 text-white' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10' }}">
               {{ $label }}
@@ -101,7 +101,7 @@
         roleButtons.forEach(btn=>{const active=btn.getAttribute('data-role')===r; btn.setAttribute('aria-pressed', active?'true':'false'); btn.className='role-btn rounded-xl px-3 py-2 text-sm transition border '+(active?'bg-white/20 border-white/40 text-white':'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10');});
       }
       roleButtons.forEach(btn=>btn.addEventListener('click',()=>applyRole(btn.getAttribute('data-role'))));
-      applyRole(roleInput.value||'siswa');
+      applyRole(roleInput.value||'peminjam');
     })();
   </script>
 </body>

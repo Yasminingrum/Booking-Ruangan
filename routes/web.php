@@ -68,8 +68,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('admin/rooms', AdminRoomController::class)->names('admin.rooms');
 
     // GURU & SISWA: pakai User dengan filter role
-    Route::get('/admin/users/teachers', [AdminUserController::class, 'indexTeachers'])->name('admin.users.teachers');
-    Route::get('/admin/users/students', [AdminUserController::class, 'indexStudents'])->name('admin.users.students');
+    Route::get('/admin/users/staff', [AdminUserController::class, 'indexStaff'])->name('admin.users.staff');
+    Route::get('/admin/users/borrowers', [AdminUserController::class, 'index'])->name('admin.users.borrowers');
     Route::get('/admin/users/create/{role}', [AdminUserController::class, 'create'])->name('admin.users.create');
     Route::post('/admin/users/store/{role}', [AdminUserController::class, 'store'])->name('admin.users.store');
     Route::get('/admin/users/{user}/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit');

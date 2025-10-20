@@ -10,37 +10,38 @@ use Illuminate\Support\Facades\Validator;
 class AdminUserController extends Controller
 {
     /**
-     * Display a listing of teachers (kepala_sekolah + cleaning_service).
+     * Display a listing of Staff (admin, kepala_sekolah, cleaning_service).
      */
-    public function indexTeachers()
+    public function indexStaff()
     {
-    $teachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
+        // ✅ Role yang valid sesuai database
+        $staff = User::whereIn('role', ['admin', 'kepala_sekolah', 'cleaning_service'])
             ->orderBy('name')
             ->paginate(10);
 
-    $totalTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])->count();
-    $activeTeachers = User::whereIn('role', ['kepala_sekolah', 'cleaning_service', 'guru'])
+        $totalStaff = User::whereIn('role', ['admin', 'kepala_sekolah', 'cleaning_service'])->count();
+        $activeStaff = User::whereIn('role', ['admin', 'kepala_sekolah', 'cleaning_service'])
             ->where('is_active', true)
             ->count();
 
-        return view('admin.users.teachers', compact('teachers', 'totalTeachers', 'activeTeachers'));
+        return view('admin.users.staff', compact('staff', 'totalStaff', 'activeStaff'));
     }
 
     /**
-     * Display a listing of students (peminjam).
+     * Display a listing of peminjam (users who can borrow rooms).
      */
-    public function indexStudents()
+    public function index()
     {
-        $students = User::where('role', 'peminjam')
+        $borrowers = User::where('role', 'peminjam')
             ->orderBy('name')
             ->paginate(10);
 
-        $totalStudents = User::where('role', 'peminjam')->count();
-        $activeStudents = User::where('role', 'peminjam')
+        $totalBorrowers = User::where('role', 'peminjam')->count();
+        $activeBorrowers = User::where('role', 'peminjam')
             ->where('is_active', true)
             ->count();
 
-        return view('admin.users.students', compact('students', 'totalStudents', 'activeStudents'));
+        return view('admin.users.borrowers', compact('borrowers', 'totalBorrowers', 'activeBorrowers'));
     }
 
     /**
@@ -48,11 +49,12 @@ class AdminUserController extends Controller
      */
     public function create($role = null)
     {
-        // Validasi role agar hanya role yang diizinkan
-    $allowedRoles = ['kepala_sekolah', 'cleaning_service', 'guru', 'peminjam'];
+        $allowedRoles = ['admin', 'kepala_sekolah', 'cleaning_service', 'peminjam'];
+
         if (!in_array($role, $allowedRoles)) {
             $role = null;
         }
+
         return view('admin.users.create', compact('role'));
     }
 
@@ -66,13 +68,13 @@ class AdminUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
+            'role' => 'required|in:admin,kepala_sekolah,cleaning_service,peminjam',
             'is_active' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
             return redirect()
-                ->route('admin.users.create')
+                ->route('admin.users.create', $request->role)
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -86,9 +88,9 @@ class AdminUserController extends Controller
             'is_active' => $request->is_active,
         ]);
 
-    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru'])
-            ? 'admin.users.teachers'
-            : 'admin.users.students';
+        $redirectRoute = in_array($request->role, ['admin', 'kepala_sekolah', 'cleaning_service'])
+            ? 'admin.users.staff'
+            : 'admin.users.borrowers';
 
         return redirect()
             ->route($redirectRoute)
@@ -116,7 +118,7 @@ class AdminUserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'password' => 'nullable|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:kepala_sekolah,cleaning_service,guru,peminjam',
+            'role' => 'required|in:admin,kepala_sekolah,cleaning_service,peminjam',
             'is_active' => 'required|boolean',
         ]);
 
@@ -141,9 +143,10 @@ class AdminUserController extends Controller
 
         $user->update($data);
 
-    $redirectRoute = in_array($request->role, ['kepala_sekolah', 'cleaning_service', 'guru'])
-            ? 'admin.users.teachers'
-            : 'admin.users.students';
+        // ✅ PERBAIKAN: Redirect logic yang benar
+        $redirectRoute = in_array($request->role, ['admin', 'kepala_sekolah', 'cleaning_service'])
+            ? 'admin.users.staff'
+            : 'admin.users.borrowers';
 
         return redirect()
             ->route($redirectRoute)
@@ -170,9 +173,10 @@ class AdminUserController extends Controller
         $role = $user->role;
         $user->delete();
 
-        $redirectRoute = in_array($role, ['kepala_sekolah', 'cleaning_service', 'guru'])
-            ? 'admin.users.teachers'
-            : 'admin.users.students';
+        // ✅ PERBAIKAN: Redirect logic yang benar
+        $redirectRoute = in_array($role, ['admin', 'kepala_sekolah', 'cleaning_service'])
+            ? 'admin.users.staff'
+            : 'admin.users.borrowers';
 
         return redirect()
             ->route($redirectRoute)

@@ -20,11 +20,11 @@
       <nav class="flex-1 px-4 py-6 space-y-2">
         <a href="{{ route('admin.dashboard') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.dashboard') ? 'bg-white/10' : '' }} hover:bg-white/20">🏠 Beranda</a>
         <a href="{{ route('admin.bookings.pending') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.bookings.*') ? 'bg-white/10' : '' }} hover:bg-white/10">📋 Peminjaman Pending</a>
-        
+
         <div class="mt-4 text-xs uppercase tracking-wide text-gray-400 px-3">Master Data</div>
         <a href="{{ route('admin.rooms.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.rooms.*') ? 'bg-white/10' : '' }} hover:bg-white/10">🏫 Ruangan</a>
-        <a href="{{ route('admin.users.teachers') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.teachers') ? 'bg-white/10' : '' }} hover:bg-white/10">👨‍🏫 Guru</a>
-        <a href="{{ route('admin.users.students') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.students') ? 'bg-white/10' : '' }} hover:bg-white/10">🎓 Siswa</a>
+        <a href="{{ route('admin.users.staff') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.staff') ? 'bg-white/10' : '' }} hover:bg-white/10">👨‍🏫 Staff</a>
+        <a href="{{ route('admin.users.borrowers') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.users.borrowers') ? 'bg-white/10' : '' }} hover:bg-white/10">🎓 Peminjam</a>
         <a href="{{ route('admin.settings.index') }}" class="block rounded-lg px-3 py-2 {{ request()->routeIs('admin.settings.*') ? 'bg-white/10' : '' }} hover:bg-white/10">⚙️ Pengaturan</a>
       </nav>
 
